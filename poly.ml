@@ -1,35 +1,17 @@
 open Core
 
-(* Sum type to encode efficiently polynomial expressions *)
+exception Unrecognized_pExpr
+
 type pExp =
-  | Term of int*int (*
-      First int is the constant
-      Second int is the power of x 
-      10  -> Term(10,0)
-      2x -> Term(2,1)
-      3x^20 -> Term(3, 20)
-    *)
+  | Term of int*int
   | Plus of pExp list
-  (*
-    List of terms added
-    Plus([Term(2,1); Term(1,0)])
-  *)
-  | Times of pExp list (* List of terms multiplied *)
-
-exception Unrecognized_pExpr of string
-
-
+  | Times of pExp list
 
 let rec nlist (_l: pExp list) (_n: int) (_pe: pExp) : pExp list =
   match _n with
   | 0 -> _l
   | _ -> nlist (_l@[_pe]) (_n - 1) _pe
 
-
-(*
-  Function to traslate betwen AST expressions
-  to pExp expressions
-*)
 let rec from_expr (_e: Expr.expr) : pExp =
     match _e with
     | Num(c) -> Term(c, 0)
@@ -41,46 +23,41 @@ let rec from_expr (_e: Expr.expr) : pExp =
     | Pos(e1) -> from_expr e1
     | Neg(e1) -> Times([Term(-1,0); from_expr e1])
 
+let rec degree (_e: pExp): int =
+  match _e with
+  | Term(n,m) -> m
+  | Plus(l) -> List.fold ~init:0 ~f:(fun acc e -> max acc (degree e)) l
+  | Times(l) -> List.fold ~init:0 ~f:(fun acc e -> acc + degree e) l
 
-(* 
-  Compute degree of a polynomial expression.
+let compare (e1: pExp) (e2: pExp) : int =
+  degree e1 - degree e2
 
-  Hint 1: Degree of Term(n,m) is m
-  Hint 2: Degree of Plus[...] is the max of the degree of args
-  Hint 3: Degree of Times[...] is the sum of the degree of args 
-*)
-let degree (_e:pExp): int = 0 (* TODO *)
-
-(* 
-  Comparison function useful for sorting of Plus[..] args 
-  to "normalize them". This way, terms that need to be reduced
-  show up one after another.
-*)
-let compare (e1: pExp) (e2: pExp) : bool =
-  degree e1 > degree e2
-
-
-let rec str_pExpr (_e: pExp): string = 
+let rec raw_str_pExpr (_e: pExp): string = 
   match _e with
   | Term(a, b) -> "Term(" ^ (string_of_int a) ^ "," ^ (string_of_int b) ^ ")"
-  | Plus(_l) -> "Plus(" ^ List.fold ~init:"" ~f:(fun acc term -> acc ^ str_pExpr(term)) _l ^ ")"
-  | Times(_l) -> "Times(" ^ List.fold ~init:"" ~f:(fun acc term -> acc ^ str_pExpr(term)) _l ^ ")"
-  | _ -> raise (Unrecognized_pExpr ("Unrecognized Polynomial Expression"))
+  | Plus(_h::_l) -> "Plus(" ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
+  | Times(_h::_l) -> "Times(" ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
+  | _ -> raise Unrecognized_pExpr
 
-(* Print a pExpr nicely 
-  Term(3,0) -> 3
-  Term(5,1) -> 5x 
-  Term(4,2) -> 4x^2
-  Plus... -> () + () 
-  Times ... -> ()() .. ()
+let str_pExpr_Term (a: int) (b: int) : string =
+  match a, b with
+  | 0, _ -> "0"
+  | _, 0 -> string_of_int a
+  | 1, 1 -> "x"
+  | -1, 1 -> "-x"
+  | 1, _ -> "x^" ^ string_of_int b
+  | -1, _ -> "-x^" ^ string_of_int b
+  | _, _ -> string_of_int a ^ "x^" ^ string_of_int b
+  
+let rec str_pExpr (_e: pExp): string = 
+  match _e with
+  | Term(a, b) -> str_pExpr_Term a b
+  | Plus(_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:(fun acc term -> acc ^ " + " ^ str_pExpr(term)) _l ^ ")"
+  | Times(_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:(fun acc term -> acc ^ " * " ^ str_pExpr(term)) _l ^ ")"
+  | _ -> raise Unrecognized_pExpr
 
-  Hint 1: Print () around elements that are not Term() 
-  Hint 2: Recurse on the elements of Plus[..] or Times[..]
-*)
 let rec print_pExp (_e: pExp): unit =
   print_string (str_pExpr _e)
-
-
 
 
 (* 
@@ -96,12 +73,38 @@ let rec print_pExp (_e: pExp): unit =
           Term(n1, m1)*Term(n2,m2) => Term(n1*n2, m1+m2)
   Hint 5: Use distributivity, i.e. Times[Plus[..],] => Plus[Times[..],]
     i.e. Times[Plus[Term(1,1); Term(2,2)]; Term(3,3)] 
-      => Plus[Times[Term(1,1); Term(3,3)]; Times[Term(2,2); Term(3,3)]]
+      => Plus[Times[Term(11); Term(3,3)]; Times[Term(2,2); Term(3,3)]]
       => Plus[Term(2,3); Term(6,5)]
   Hint 6: Find other situations that can arise
 *)
-let simplify1 (e:pExp): pExp =
-    e
+
+let accumulateTerms (acc: pExp list) (e: pExp) : pExp list =
+  match acc, e with
+  | [] ,_ -> [e] 
+  | 
+
+let rec flatPlus (acc: pExp list) (e: pExp) : pExp list =
+  acc @ (
+    match e with
+    | Plus(l) -> List.map ~f:simplify1 l
+    | _       -> [simplify1 e]
+  )
+
+and flatTimes (acc: pExp list) (e: pExp) : pExp list =
+acc @ (
+  match e with
+  | Times(l) -> List.map ~f:simplify1 l
+  | _       -> [simplify1 e]
+)
+
+and simplify1 (e:pExp): pExp =
+  match e with
+  | Plus(l)  -> (
+    let l = List.fold ~init:[] ~f:flatPlus (List.sort l compare) in
+    Plus( List.fold ~init:[] ~f:accumulateTerms l )
+  )
+  | Times(l) -> Times(List.fold ~init:[] ~f:flatTimes l)
+  | _ -> e
 
 (* 
   Compute if two pExp are the same 
@@ -121,7 +124,3 @@ let rec simplify (e:pExp): pExp =
         e
       else  
         simplify(rE)
-
-
-
-
