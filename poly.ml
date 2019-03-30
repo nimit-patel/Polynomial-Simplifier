@@ -14,50 +14,67 @@ let rec nlist (_l: pExp list) (_n: int) (_pe: pExp) : pExp list =
 
 let rec from_expr (_e: Expr.expr) : pExp =
     match _e with
-    | Num(c) -> Term(c, 0)
-    | Var(x) -> Term(1, 1)
-    | Add(e1, e2) -> Plus( [ from_expr e1; from_expr e2 ] )
-    | Sub(e1, e2) -> Plus( [ from_expr e1; from_expr (Neg(e2)) ] )
-    | Mul(e1, e2) -> Times( [ from_expr e1; from_expr e2 ] )
-    | Pow(base, exp) -> Times((nlist [] exp (from_expr(base))))
-    | Pos(e1) -> from_expr e1
-    | Neg(e1) -> Times([Term(-1,0); from_expr e1])
+    | Num(c)          -> Term (c, 0)
+    | Var(x)          -> Term (1, 1)
+    | Add(e1, e2)     -> Plus ([ from_expr e1; from_expr e2 ])
+    | Sub(e1, e2)     -> Plus ([ from_expr e1; from_expr (Neg(e2))])
+    | Mul(e1, e2)     -> Times([ from_expr e1; from_expr e2 ])
+    | Pow(base, exp)  -> Times((nlist [] exp (from_expr(base))))
+    | Pos(e1)         -> from_expr e1
+    | Neg(e1)         -> Times([Term(-1,0); from_expr e1])
 
 let rec degree (_e: pExp): int =
   match _e with
-  | Term(n,m) -> m
-  | Plus(l) -> List.fold ~init:0 ~f:(fun acc e -> max acc (degree e)) l
-  | Times(l) -> List.fold ~init:0 ~f:(fun acc e -> acc + degree e) l
+  | Term  (n,m) -> m
+  | Plus  (l)   -> List.fold ~init:0 ~f:(fun acc e -> max acc (degree e)) l
+  | Times (l)   -> List.fold ~init:0 ~f:(fun acc e -> acc + degree e    ) l
 
-let compare (e1: pExp) (e2: pExp) : int =
+let compareDeg (e1: pExp) (e2: pExp) : int =
   degree e1 - degree e2
 
 let rec raw_str_pExpr (_e: pExp): string = 
   match _e with
-  | Term(a, b) -> "Term(" ^ (string_of_int a) ^ "," ^ (string_of_int b) ^ ")"
-  | Plus(_h::_l) -> "Plus(" ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
+  | Term (a  , b) -> "Term("  ^ (string_of_int a) ^ "," ^ (string_of_int b) ^ ")"
+  | Plus (_h::_l) -> "Plus("  ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
   | Times(_h::_l) -> "Times(" ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
   | _ -> raise Unrecognized_pExpr
 
 let str_pExpr_Term (a: int) (b: int) : string =
   match a, b with
-  | 0, _ -> "0"
-  | _, 0 -> string_of_int a
-  | 1, 1 -> "x"
+  | 0 , _ -> ""
+  | _ , 0 -> string_of_int a
+  | 1 , 1 -> "x"
   | -1, 1 -> "-x"
-  | 1, _ -> "x^" ^ string_of_int b
+  | 1 , _ -> "x^" ^ string_of_int b
   | -1, _ -> "-x^" ^ string_of_int b
-  | _, _ -> string_of_int a ^ "x^" ^ string_of_int b
+  | _ , _ -> string_of_int a ^ "x^" ^ string_of_int b
   
+let strip_first_char str =
+  if str = "" then "" else String.sub str 1 ((String.length str) - 1)
+
 let rec str_pExpr (_e: pExp): string = 
   match _e with
-  | Term(a, b) -> str_pExpr_Term a b
-  | Plus(_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:(fun acc term -> acc ^ " + " ^ str_pExpr(term)) _l ^ ")"
-  | Times(_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:(fun acc term -> acc ^ " * " ^ str_pExpr(term)) _l ^ ")"
+  | Term(a, b)    -> str_pExpr_Term a b
+  | Plus (_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_plus  _l ^ ")"
+  | Times(_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_times _l ^ ")"
   | _ -> raise Unrecognized_pExpr
 
+and str_pExpr_plus (acc: string) (e: pExp) : string =
+  acc ^ match e with
+  | Term(m,n) when compare m 0 = 0 -> ""
+  | Term(m,n) when m < 0 -> " - " ^ strip_first_char (str_pExpr e)
+  | _ -> " + " ^ str_pExpr e
+
+and str_pExpr_times (acc: string) (e: pExp) : string =
+  acc ^ " " ^ match e with
+  | Term(m,n) when compare m 0 = 0 -> ""
+  | Term(m,n) when m < 0 -> "(" ^ str_pExpr e ^ ")"
+  | _ -> str_pExpr e
+
+
+
 let rec print_pExp (_e: pExp): unit =
-  print_string (str_pExpr _e)
+  print_string (str_pExpr _e ^ "\n")
 
 
 (* 
@@ -78,25 +95,57 @@ let rec print_pExp (_e: pExp): unit =
   Hint 6: Find other situations that can arise
 *)
 
-let rec _accumulateTerms (ct: pExp) (l: pExp list) : pExp list =
-  match l with
+let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
+  match acc with
   | hd::tl -> (
-    match hd with
-    | Term(m,n) -> 
+    match hd, e with
+    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0 -> [Term(m1+m2,n1)]@tl
+    | _ -> [e]@acc
   )
-  | _ -> []
+  | [] -> [e]
 
-let rec accumulateTerms (l: pExp list) : pExp list =
-  match l with
+let accumulateTimes (acc: pExp list) (e: pExp) : pExp list =
+  match acc with
   | hd::tl -> (
-    match hd with
-    | Term(c, e) -> _accumulateTerms Term(c, e) tl
-    | _ -> [hd]@(accumulateTerms tl)
+    match hd, e with
+    | Term(m1,n1), Term(m2,n2) -> [Term(m1*m2,n1+n2)]@tl
+    | _ -> [e]@acc
   )
-  | _ -> []
+  | [] -> [e]
 
+let distribute (acc: pExp list) (e: pExp) : pExp list =
+  acc @ match e in
+  | Plus[]
+  | Term
+  
+    
 
-let rec flatPlus (acc: pExp list) (e: pExp) : pExp list =
+let rec simplify1 (e:pExp): pExp =
+  match e with
+  | Plus(l) -> (
+    match l with 
+    | l::[] -> l
+    | _ -> (
+      List.sort l compareDeg                |>
+      List.fold ~init:[] ~f:flatPlus        |>
+      List.fold ~init:[] ~f:accumulatePlus  |>
+      Plus
+    )
+  )
+  | Times(l) -> ( 
+    match l with 
+    | l::[] -> l
+    | _ -> (
+      List.sort l compareDeg                |>
+      List.fold ~init:[] ~f:flatTimes       |>
+      List.fold ~init:[] ~f:accumulateTimes |>
+      List.fold ~init:[] ~f:distribute      |>
+      Times
+    )
+  )
+  | _ -> e
+
+and flatPlus (acc: pExp list) (e: pExp) : pExp list =
   acc @ (
     match e with
     | Plus(l) -> List.map ~f:simplify1 l
@@ -107,33 +156,29 @@ and flatTimes (acc: pExp list) (e: pExp) : pExp list =
 acc @ (
   match e with
   | Times(l) -> List.map ~f:simplify1 l
-  | _       -> [simplify1 e]
+  | _        -> [simplify1 e]
 )
 
-and simplify1 (e:pExp): pExp =
-  match e with
-  | Plus(l)  -> (
-    let l = List.fold ~init:[] ~f:flatPlus (List.sort l compare) in
-    Plus( accumulateTerms l )
+let rec equal_pExp (_e1: pExp) (_e2: pExp) : bool =
+  match _e1, _e2 with
+  | Times(l1), Times(l2) | Plus(l1), Plus(l2) -> equal_pExp_l l1 l2
+  | Term(m1,n1), Term(m2,n2) -> (compare m1 m2) = 0 && (compare n1 n2) = 0
+  | _,_ -> false
+
+and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
+  match _l1, _l2 with
+  | [],[] -> true (* two empty lists are equal *)
+  | hd1::tl1, hd2::tl2 -> (
+    (equal_pExp hd1 hd2) && (equal_pExp_l tl1 tl2)
   )
-  | Times(l) -> Times(List.fold ~init:[] ~f:flatTimes l)
-  | _ -> e
+  | _ -> false (* takes care of distinct lenghts *)
 
-(* 
-  Compute if two pExp are the same 
-  Make sure this code works before you work on simplify1  
-*)
-let equal_pExp (_e1: pExp) (_e2: pExp) :bool =
-  true
-
-(* Fixed point version of simplify1 
-  i.e. Apply simplify1 until no 
-  progress is made
-*)    
 let rec simplify (e:pExp): pExp =
-    let rE = simplify1(e) in
+  let rE = simplify1(e) in
+    if (equal_pExp e rE) then
+      e
+    else begin
       print_pExp rE;
-      if (equal_pExp e rE) then
-        e
-      else  
-        simplify(rE)
+      print_string ((raw_str_pExpr rE) ^ "\n");
+      simplify(rE)
+    end
