@@ -36,8 +36,8 @@ let compareDeg (e1: pExp) (e2: pExp) : int =
 let rec raw_str_pExpr (_e: pExp): string = 
   match _e with
   | Term (a  , b) -> "Term("  ^ (string_of_int a) ^ "," ^ (string_of_int b) ^ ")"
-  | Plus (_h::_l) -> "Plus("  ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
-  | Times(_h::_l) -> "Times(" ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
+  | Plus (_h::_l) -> "Plus(\n"  ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
+  | Times(_h::_l) -> "Times(\n" ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
   | _ -> raise Unrecognized_pExpr
 
 let str_pExpr_Term (a: int) (b: int) : string =
@@ -85,24 +85,6 @@ and str_pExpr_times (acc: string) (e: pExp) : string =
 let rec print_pExp (_e: pExp): unit =
   print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
 
-(* 
-  Function to simplify (one pass) pExpr
-
-  n1 x^m1 * n2 x^m2 -> n1*n2 x^(m1+m2)
-  Term(n1,m1)*Term(n2,m2) -> Term(n1*n2,m1+m2)
-
-  Hint 1: Keep terms in Plus[...] sorted
-  Hint 2: flatten plus, i.e. Plus[ Plus[..], ..] => Plus[..]
-  Hint 3: flatten times, i.e. times of times is times
-  Hint 4: Accumulate terms. Term(n1,m)+Term(n2,m) => Term(n1+n2,m)
-          Term(n1, m1)*Term(n2,m2) => Term(n1*n2, m1+m2)
-  Hint 5: Use distributivity, i.e. Times[Plus[..],] => Plus[Times[..],]
-    i.e. Times[Plus[Term(1,1); Term(2,2)]; Term(3,3)] 
-      => Plus[Times[Term(11); Term(3,3)]; Times[Term(2,2); Term(3,3)]]
-      => Plus[Term(2,3); Term(6,5)]
-  Hint 6: Find other situations that can arise
-*)
-
 let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
@@ -123,9 +105,9 @@ let accumulateTimes (acc: pExp list) (e: pExp) : pExp list =
 
 let rec _distribute (_e1: pExp) (_e2: pExp) : pExp list =
   match _e1, _e2 with
-  | Term(_,_), Plus(l) -> [Plus((List.fold ~init:[] ~f:(fun a e -> [Times([_e1; e])]@a) l))]
-  | Plus(l), Term(_,_) -> [Plus((List.fold ~init:[] ~f:(fun a e -> [Times([_e2; e])]@a) l))]
-  | Plus(l1), Plus(l2) -> [Plus((List.fold ~init:[] ~f:(fun a e -> (_distribute _e1 e)@a) l2))]
+  | Term(_,_), Plus(l) -> [Plus((List.fold ~init:[] ~f:(fun a e -> [Times([_e1; e])         ]@a) l ))]
+  | Plus(l), Term(_,_) -> [Plus((List.fold ~init:[] ~f:(fun a e -> [Times([_e2; e])         ]@a) l ))]
+  | Plus(l1), Plus(l2) -> [Plus((List.fold ~init:[] ~f:(fun a e -> [Times(_distribute _e1 e)]@a) l2))]
   | _,_ -> [_e2; _e1]
 
 let distribute (acc: pExp list) (e: pExp) : pExp list =
@@ -187,7 +169,7 @@ and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
   | _ -> false (* takes care of distinct lenghts *)
 
 let rec simplify (e:pExp): pExp =
-  print_string ((raw_str_pExpr e) ^ "\n");
+  (*print_string ((raw_str_pExpr e) ^ "\n");*)
   let rE = simplify1(e) in
     if (equal_pExp e rE) then
       e
