@@ -78,10 +78,23 @@ let rec print_pExp (_e: pExp): unit =
   Hint 6: Find other situations that can arise
 *)
 
-let accumulateTerms (acc: pExp list) (e: pExp) : pExp list =
-  match acc, e with
-  | [] ,_ -> [e] 
-  | 
+let rec _accumulateTerms (ct: pExp) (l: pExp list) : pExp list =
+  match l with
+  | hd::tl -> (
+    match hd with
+    | Term(m,n) -> 
+  )
+  | _ -> []
+
+let rec accumulateTerms (l: pExp list) : pExp list =
+  match l with
+  | hd::tl -> (
+    match hd with
+    | Term(c, e) -> _accumulateTerms Term(c, e) tl
+    | _ -> [hd]@(accumulateTerms tl)
+  )
+  | _ -> []
+
 
 let rec flatPlus (acc: pExp list) (e: pExp) : pExp list =
   acc @ (
@@ -101,7 +114,7 @@ and simplify1 (e:pExp): pExp =
   match e with
   | Plus(l)  -> (
     let l = List.fold ~init:[] ~f:flatPlus (List.sort l compare) in
-    Plus( List.fold ~init:[] ~f:accumulateTerms l )
+    Plus( accumulateTerms l )
   )
   | Times(l) -> Times(List.fold ~init:[] ~f:flatTimes l)
   | _ -> e
