@@ -1,6 +1,7 @@
 open Core
 
 exception Unrecognized_pExpr
+exception InvalidArgumentsForDistributive of string
 
 type pExp =
   | Term of int*int
@@ -45,12 +46,22 @@ let str_pExpr_Term (a: int) (b: int) : string =
   | _ , 0 -> string_of_int a
   | 1 , 1 -> "x"
   | -1, 1 -> "-x"
+  | _ , 1 -> string_of_int a ^ "x"
   | 1 , _ -> "x^" ^ string_of_int b
   | -1, _ -> "-x^" ^ string_of_int b
   | _ , _ -> string_of_int a ^ "x^" ^ string_of_int b
   
 let strip_first_char str =
   if str = "" then "" else String.sub str 1 ((String.length str) - 1)
+
+let strip_root_parenthesis str =
+  match String.length str with
+  | 0 | 1 | 2 -> ""
+  | len -> (
+    match str.[0] with
+    | '(' -> String.sub str 1 (len - 2)
+    | _ -> str
+  )
 
 let rec str_pExpr (_e: pExp): string = 
   match _e with
@@ -66,16 +77,13 @@ and str_pExpr_plus (acc: string) (e: pExp) : string =
   | _ -> " + " ^ str_pExpr e
 
 and str_pExpr_times (acc: string) (e: pExp) : string =
-  acc ^ " " ^ match e with
+  acc ^ match e with
   | Term(m,n) when compare m 0 = 0 -> ""
   | Term(m,n) when m < 0 -> "(" ^ str_pExpr e ^ ")"
-  | _ -> str_pExpr e
-
-
+  | _ -> " * " ^ str_pExpr e
 
 let rec print_pExp (_e: pExp): unit =
-  print_string (str_pExpr _e ^ "\n")
-
+  print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
 
 (* 
   Function to simplify (one pass) pExpr
@@ -113,12 +121,17 @@ let accumulateTimes (acc: pExp list) (e: pExp) : pExp list =
   )
   | [] -> [e]
 
+let rec _distribute (_e1: pExp) (_e2: pExp) : pExp list =
+  match _e1, _e2 with
+  | Term(_,_), Plus(l) -> [Plus((List.fold ~init:[] ~f:(fun a e -> [Times([_e1; e])]@a) l))]
+  | Plus(l), Term(_,_) -> [Plus((List.fold ~init:[] ~f:(fun a e -> [Times([_e2; e])]@a) l))]
+  | Plus(l1), Plus(l2) -> [Plus((List.fold ~init:[] ~f:(fun a e -> (_distribute _e1 e)@a) l2))]
+  | _,_ -> [_e2; _e1]
+
 let distribute (acc: pExp list) (e: pExp) : pExp list =
-  acc @ match e in
-  | Plus[]
-  | Term
-  
-    
+  match acc with
+  | hd::tl -> (_distribute hd e)@tl
+  | [] -> [e]
 
 let rec simplify1 (e:pExp): pExp =
   match e with
@@ -174,11 +187,11 @@ and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
   | _ -> false (* takes care of distinct lenghts *)
 
 let rec simplify (e:pExp): pExp =
+  print_string ((raw_str_pExpr e) ^ "\n");
   let rE = simplify1(e) in
     if (equal_pExp e rE) then
       e
     else begin
       print_pExp rE;
-      print_string ((raw_str_pExpr rE) ^ "\n");
       simplify(rE)
     end
