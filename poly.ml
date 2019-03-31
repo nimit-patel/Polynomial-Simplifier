@@ -2,10 +2,12 @@ open Core
 
 exception Unrecognized_pExpr
 exception InvalidArgumentsForDistributive of string
+exception GcdError
 
 type pExp =
   | Term of int*int
   | Plus of pExp list
+  | Fraction of pExp * pExp
   | Times of pExp list
 
 let rec nlist (_l: pExp list) (_n: int) (_pe: pExp) : pExp list =
@@ -20,24 +22,27 @@ let rec from_expr (_e: Expr.expr) : pExp =
     | Add(e1, e2)     -> Plus ([ from_expr e1; from_expr e2 ])
     | Sub(e1, e2)     -> Plus ([ from_expr e1; from_expr (Neg(e2))])
     | Mul(e1, e2)     -> Times([ from_expr e1; from_expr e2 ])
+    | Div(num, denom) -> Fraction (from_expr num, from_expr denom)
     | Pow(base, exp)  -> Times((nlist [] exp (from_expr(base))))
     | Pos(e1)         -> from_expr e1
     | Neg(e1)         -> Times([Term(-1,0); from_expr e1])
 
 let rec degree (_e: pExp): int =
   match _e with
-  | Term  (n,m) -> m
-  | Plus  (l)   -> List.fold ~init:0 ~f:(fun acc e -> max acc (degree e)) l
-  | Times (l)   -> List.fold ~init:0 ~f:(fun acc e -> acc + degree e    ) l
+  | Term  (n,m)    -> m
+  | Plus  (l)      -> List.fold ~init:0 ~f:(fun acc e -> max acc (degree e)) l
+  | Times (l)      -> List.fold ~init:0 ~f:(fun acc e -> acc + degree e    ) l
+  | Fraction (n,d) -> (degree n) - (degree d)
 
 let compareDeg (e1: pExp) (e2: pExp) : int =
   degree e1 - degree e2
 
 let rec raw_str_pExpr (_e: pExp): string = 
   match _e with
-  | Term (a  , b) -> "Term("  ^ (string_of_int a) ^ "," ^ (string_of_int b) ^ ")"
-  | Plus (_h::_l) -> "Plus(\n"  ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
-  | Times(_h::_l) -> "Times(\n" ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ "," ^ raw_str_pExpr(term)) _l ^ ")"
+  | Term    (a, b  )  -> "Term("     ^ (string_of_int a) ^ ", " ^ (string_of_int b)                                                ^ ")"
+  | Plus    (_h::_l)  -> "Plus("     ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ ", " ^ raw_str_pExpr(term)) _l ^ ")"
+  | Times   (_h::_l)  -> "Times("    ^ List.fold ~init:(raw_str_pExpr _h) ~f:(fun acc term -> acc ^ ", " ^ raw_str_pExpr(term)) _l ^ ")"
+  | Fraction(n, d  )  -> "Fraction(" ^ raw_str_pExpr n ^ ", "  ^ raw_str_pExpr d                                                   ^ ")"
   | _ -> raise Unrecognized_pExpr
 
 let str_pExpr_Term (a: int) (b: int) : string =
@@ -56,7 +61,7 @@ let strip_first_char str =
 
 let strip_root_parenthesis str =
   match String.length str with
-  | 0 | 1 | 2 -> ""
+  | 0 | 1 | 2 -> str
   | len -> (
     match str.[0] with
     | '(' -> String.sub str 1 (len - 2)
@@ -65,9 +70,10 @@ let strip_root_parenthesis str =
 
 let rec str_pExpr (_e: pExp): string = 
   match _e with
-  | Term(a, b)    -> str_pExpr_Term a b
-  | Plus (_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_plus  _l ^ ")"
-  | Times(_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_times _l ^ ")"
+  | Term    (a, b  ) -> str_pExpr_Term a b
+  | Plus    (_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_plus  _l ^ ")"
+  | Times   (_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_times _l ^ ")"
+  | Fraction(n, d  ) -> "(" ^ str_pExpr n ^ "/" ^ str_pExpr d ^ ")"
   | _ -> raise Unrecognized_pExpr
 
 and str_pExpr_plus (acc: string) (e: pExp) : string =
@@ -83,7 +89,7 @@ and str_pExpr_times (acc: string) (e: pExp) : string =
   | _ -> " * " ^ str_pExpr e
 
 let rec print_pExp (_e: pExp): unit =
-  print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
+  print_string ((*strip_root_parenthesis*) (str_pExpr _e) ^ "\n")
 
 let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
@@ -138,6 +144,7 @@ let rec simplify1 (e:pExp): pExp =
       Times
     )
   )
+  | Fraction(n, d) -> handleFractions n d
   | _ -> e
 
 and flatPlus (acc: pExp list) (e: pExp) : pExp list =
@@ -148,15 +155,26 @@ and flatPlus (acc: pExp list) (e: pExp) : pExp list =
   )
 
 and flatTimes (acc: pExp list) (e: pExp) : pExp list =
-acc @ (
-  match e with
-  | Times(l) -> List.map ~f:simplify1 l
-  | _        -> [simplify1 e]
-)
+  acc @ (
+    match e with
+    | Times(l) -> List.map ~f:simplify1 l
+    | _        -> [simplify1 e]
+  )
+
+and handleFractions (n: pExp) (d: pExp) : pExp =
+  match simplify1(n), simplify1(d) with
+  | n, Term(dc, dd)            when dc = 1   && dd = 0  -> n                                                                 (* ax^n / 1                => ax^n           *)
+  | Term(nc, nd), Term(dc, dd) when nc mod dc = 0       -> Fraction(Term(nc/dc, nd), Term(1,dd))                             (* ax^n / bx^m where a | b => (a/b)x^n / x^m *)
+  | Term(nc, nd), Term(dc, dd) when nc =  dc && nd = dd -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
+  | Term(nc, nd), Term(dc, dd) when nd =  dd            -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
+  | Term(nc, nd), Term(dc, dd) when nd >= dd            -> Times([handleFractions (Term(nc,0)) (Term(dc,0)); Term(1,nd-dd)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
+  (* | Plus(l), denom -> Plus( List.fold ~init:[] ~f:(fun a e -> a@[Fraction(e,denom)]) l ) *)
+  | n, d -> Fraction(n, d)
 
 let rec equal_pExp (_e1: pExp) (_e2: pExp) : bool =
   match _e1, _e2 with
   | Times(l1), Times(l2) | Plus(l1), Plus(l2) -> equal_pExp_l l1 l2
+  | Fraction(d1, n1), Fraction(d2, n2) -> equal_pExp d1 d2 && equal_pExp n1 n2
   | Term(m1,n1), Term(m2,n2) -> (compare m1 m2) = 0 && (compare n1 n2) = 0
   | _,_ -> false
 
@@ -169,11 +187,13 @@ and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
   | _ -> false (* takes care of distinct lenghts *)
 
 let rec simplify (e:pExp): pExp =
-  (*print_string ((raw_str_pExpr e) ^ "\n");*)
+  print_string ((raw_str_pExpr e) ^ " [before simplify]\n");
   let rE = simplify1(e) in
-    if (equal_pExp e rE) then
+    if (equal_pExp e rE) then begin
+      print_string ((raw_str_pExpr rE) ^ " [final]\n");
       e
+    end
     else begin
-      print_pExp rE;
+      print_string ((raw_str_pExpr rE) ^ " [after simplify]\n");
       simplify(rE)
     end
