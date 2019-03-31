@@ -29,9 +29,9 @@ and
       | Sub(e1,e2) -> print_op2 "-" e1 e2
       | Mul(e1,e2) -> print_op2 "*" e1 e2
       | Pow(e,i) -> 
-        Printf.printf "(";
-        print_expr_r e;
-        Printf.printf ")^%d" i;
+          Printf.printf "(";
+          print_expr_r e;
+          Printf.printf ")^%d" i;
       | Pos(e) -> print_op1 "+" e
       | Neg(e) -> print_op1 "-" e
 
