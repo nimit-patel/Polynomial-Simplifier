@@ -95,7 +95,9 @@ let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
-    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0 -> [Term(m1+m2,n1)]@tl
+    | Fraction(a,b) , Fraction(c,d)                      -> [Fraction(Plus([Times([a;d]);Times([c;b])]),Times([b;d]))]@tl
+    | a , Fraction(c,d)             | Fraction(c,d) , a  -> [Fraction(Plus([Times([a;d]);c           ]),           d)]@tl
+    | Term(m1,n1)   , Term(m2,n2) when compare n1 n2 = 0 -> [Term(m1+m2,n1)                                          ]@tl
     | _ -> [e]@acc
   )
   | [] -> [e]
@@ -104,8 +106,10 @@ let accumulateTimes (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
-    | Term(m1,n1), Term(m2,n2) -> [Term(m1*m2,n1+n2)]@tl
-    | _ -> [e]@acc
+    | Fraction(a,b) , Fraction(c,d)                      -> [Fraction(Times([a;c]),Times([b;d]))]@tl
+    | a , Fraction(c,d)             | Fraction(c,d) , a  -> [Fraction(Times([a;c]),d)           ]@tl
+    | Term(m1,n1), Term(m2,n2)                           -> [Term(m1*m2,n1+n2)                  ]@tl
+    | _                                                  -> [e]@acc
   )
   | [] -> [e]
 
@@ -127,7 +131,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.stable_sort l compareDeg                |>
+      List.sort l compareDeg         |>
       List.fold ~init:[] ~f:flatPlus        |>
       List.fold ~init:[] ~f:accumulatePlus  |>
       Plus
@@ -137,7 +141,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.stable_sort l compareDeg                |>
+      List.sort l compareDeg         |>
       List.fold ~init:[] ~f:flatTimes       |>
       List.fold ~init:[] ~f:accumulateTimes |>
       List.fold ~init:[] ~f:distribute      |>
@@ -188,12 +192,13 @@ and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
 
 let rec simplify (e:pExp): pExp =
   print_string ((raw_str_pExpr e) ^ " [before simplify]\n");
+  print_pExp e;
   let rE = simplify1(e) in
     if (equal_pExp e rE) then begin
       print_string ((raw_str_pExpr rE) ^ " [final]\n");
+      print_pExp e;
       e
     end
     else begin
-      print_string ((raw_str_pExpr rE) ^ " [after simplify]\n");
       simplify(rE)
     end
