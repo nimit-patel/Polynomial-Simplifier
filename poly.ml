@@ -89,7 +89,7 @@ and str_pExpr_times (acc: string) (e: pExp) : string =
   | _ -> " * " ^ str_pExpr e
 
 let rec print_pExp (_e: pExp): unit =
-  print_string ((*strip_root_parenthesis*) (str_pExpr _e) ^ "\n")
+  print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
 
 let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
@@ -127,7 +127,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.sort l compareDeg                |>
+      List.stable_sort l compareDeg                |>
       List.fold ~init:[] ~f:flatPlus        |>
       List.fold ~init:[] ~f:accumulatePlus  |>
       Plus
@@ -137,7 +137,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.sort l compareDeg                |>
+      List.stable_sort l compareDeg                |>
       List.fold ~init:[] ~f:flatTimes       |>
       List.fold ~init:[] ~f:accumulateTimes |>
       List.fold ~init:[] ~f:distribute      |>
@@ -163,10 +163,10 @@ and flatTimes (acc: pExp list) (e: pExp) : pExp list =
 
 and handleFractions (n: pExp) (d: pExp) : pExp =
   match simplify1(n), simplify1(d) with
-  | n, Term(dc, dd)            when dc = 1   && dd = 0  -> n                                                                 (* ax^n / 1                => ax^n           *)
+  | n           , Term(dc, dd) when dc = 1 && dd = 0    -> n                                                                 (* ax^n / 1                => ax^n           *)
   | Term(nc, nd), Term(dc, dd) when nc mod dc = 0       -> Fraction(Term(nc/dc, nd), Term(1,dd))                             (* ax^n / bx^m where a | b => (a/b)x^n / x^m *)
-  | Term(nc, nd), Term(dc, dd) when nc =  dc && nd = dd -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
-  | Term(nc, nd), Term(dc, dd) when nd =  dd            -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
+  | Term(nc, nd), Term(dc, dd) when nc = dc && nd = dd  -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
+  | Term(nc, nd), Term(dc, dd) when nd = dd             -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
   | Term(nc, nd), Term(dc, dd) when nd >= dd            -> Times([handleFractions (Term(nc,0)) (Term(dc,0)); Term(1,nd-dd)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
   (* | Plus(l), denom -> Plus( List.fold ~init:[] ~f:(fun a e -> a@[Fraction(e,denom)]) l ) *)
   | n, d -> Fraction(n, d)
