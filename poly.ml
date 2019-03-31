@@ -56,7 +56,7 @@ let strip_first_char str =
 
 let strip_root_parenthesis str =
   match String.length str with
-  | 0 | 1 | 2 -> ""
+  | 0 | 1 | 2 -> str
   | len -> (
     match str.[0] with
     | '(' -> String.sub str 1 (len - 2)
