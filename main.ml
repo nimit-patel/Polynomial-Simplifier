@@ -18,8 +18,8 @@ let rec _checkPoly (exp: expr) (pexp: pExp) (v: int) : pExp =
     raise NotMatchingPolynomials
 
 let checkPoly (exp: expr) (pexp: pExp) : pExp =
-  match degree_expr exp, degree pexp with
-  | d1, d2 -> _checkPoly exp pexp (max d1 d2)
+  match degree_hibound_expr exp, degree pexp with
+  | d1, d2 when d1 >= d2 -> _checkPoly exp pexp (d1+1)
   | _ -> raise NotMatchingDegree
 
 let () =

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-make tests
+make clean --always-make && make tests --always-make
 
 tbold=$(tput bold)
 tnormal=$(tput sgr0)

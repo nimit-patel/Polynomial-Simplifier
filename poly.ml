@@ -1,4 +1,5 @@
 open Core
+open Expr
 
 exception Unrecognized_pExpr
 exception InvalidArgumentsForDistributive of string
@@ -127,7 +128,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.sort compareDeg l                |>
+      List.stable_sort compareDeg l         |>
       List.fold ~init:[] ~f:flatPlus        |>
       List.fold ~init:[] ~f:accumulatePlus  |>
       Plus
@@ -137,7 +138,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.sort compareDeg l                |>
+      List.stable_sort compareDeg l         |>
       List.fold ~init:[] ~f:flatTimes       |>
       List.fold ~init:[] ~f:accumulateTimes |>
       List.fold ~init:[] ~f:distribute      |>
