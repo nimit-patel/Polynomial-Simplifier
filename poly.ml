@@ -199,14 +199,8 @@ let rec eval_pExp (e: pExp) ~v:(v: int) : int =
   | _ -> 0
 
 let rec simplify (e:pExp): pExp =
-  print_string ((raw_str_pExpr e) ^ " [before simplify]\n");
-  print_pExp e;
   let rE = simplify1(e) in
-    if (equal_pExp e rE) then begin
-      print_string ((raw_str_pExpr rE) ^ " [final]\n");
-      print_pExp e;
+    if (equal_pExp e rE) then
       e
-    end
-    else begin
+    else
       simplify(rE)
-    end
