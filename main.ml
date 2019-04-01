@@ -26,7 +26,6 @@ let () =
     let file = open_in filename in
     let t = Lexing.from_channel file in
     let exp = Parser.main Lexer.token t in
-    let exp = print_expr exp in
     let pexp = from_expr exp in 
     let pexp = simplify pexp in
     checkPoly exp pexp |>

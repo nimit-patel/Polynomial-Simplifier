@@ -27,7 +27,7 @@ let rec from_expr (_e: Expr.expr) : pExp =
 
 let rec degree (_e: pExp): int =
   match _e with
-  | Term  (n,m) -> m
+  | Term  (n,m) -> if n = 0 then 0 else m
   | Plus  (l)   -> List.fold ~init:0 ~f:(fun acc e -> max acc (degree e)) l
   | Times (l)   -> List.fold ~init:0 ~f:(fun acc e -> acc + degree e    ) l
 
@@ -85,14 +85,19 @@ and str_pExpr_times (acc: string) (e: pExp) : string =
   | _ -> " * " ^ str_pExpr e
 
 let rec print_pExp (_e: pExp): unit =
-  print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
+  match _e with
+  | Term(0, _)  -> print_string "0";
+  | _ -> print_string (strip_root_parenthesis (str_pExpr _e))
 
 let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
-    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0 -> [Term(m1+m2,n1)]@tl
-    | _ -> [e]@acc
+    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0  -> [Term(m1+m2, n1)]@tl
+    | Term(m1,n1), Term(m2,n2) when m1 = 0 && m2 = 0   -> [Term(0, 0)]@tl
+    | Term(m1,n1), Term(m2,n2) when m1 = 0             -> [Term(m2, n2)]@tl
+    | Term(m1,n1), Term(m2,n2) when m2 = 0             -> [Term(m1, n1)]@tl
+    | _ -> [e]@acc 
   )
   | [] -> [e]
 
@@ -179,9 +184,8 @@ let rec eval_pExp (e: pExp) ~v:(v: int) : int =
 
 let rec simplify (e:pExp): pExp =
   let rE = simplify1(e) in
-    if (equal_pExp e rE) then begin
-      (*print_string ((raw_str_pExpr e) ^ "\n");*)
+    if (equal_pExp e rE) then
       e
-    end
-    else
+    else begin
       simplify(rE)
+    end
