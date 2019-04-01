@@ -173,7 +173,7 @@ and flatTimes (acc: pExp list) (e: pExp) : pExp list =
 and handleFractions (n: pExp) (d: pExp) : pExp =
   match simplify1(n), simplify1(d) with
   | n           , Term(dc, dd) when dc = 1 && dd = 0    -> n                                                                 (* ax^n / 1                => ax^n           *)
-  | Term(nc, nd), Term(dc, dd) when nc mod dc = 0       -> Fraction(Term(nc/dc, nd), Term(1,dd))                             (* ax^n / bx^m where a | b => (a/b)x^n / x^m *)
+  | Term(nc, nd), Term(dc, dd) when nc mod dc = 0       -> Fraction(Term(nc/dc, nd), Term(1,dd))    
   | Term(nc, nd), Term(dc, dd) when nc = dc && nd = dd  -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
   | Term(nc, nd), Term(dc, dd) when nd = dd             -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
   | Term(nc, nd), Term(dc, dd) when nd >= dd            -> Times([handleFractions (Term(nc,0)) (Term(dc,0)); Term(1,nd-dd)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
