@@ -42,6 +42,7 @@ let rec raw_str_pExpr (_e: pExp): string =
 
 let str_pExpr_Term (a: int) (b: int) : string =
   match a, b with
+  | 0 , 0 -> "0"
   | 0 , _ -> ""
   | _ , 0 -> string_of_int a
   | 1 , 1 -> "x"
@@ -168,12 +169,18 @@ and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
   )
   | _ -> false (* takes care of distinct lenghts *)
 
+let rec eval_pExp (e: pExp) ~v:(v: int) : int =
+  match e with
+  | Plus(hd::tl)  -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t + eval_pExp e v) tl
+  | Times(hd::tl) -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t * eval_pExp e v) tl
+  | Term(m, n)    -> m * Expr.pow v n
+  | _ -> 0
+
 let rec simplify (e:pExp): pExp =
-  (*print_string ((raw_str_pExpr e) ^ "\n");*)
   let rE = simplify1(e) in
-    if (equal_pExp e rE) then
+    if (equal_pExp e rE) then begin
+      (*print_string ((raw_str_pExpr e) ^ "\n");*)
       e
-    else begin
-      print_pExp rE;
-      simplify(rE)
     end
+    else
+      simplify(rE)
