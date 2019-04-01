@@ -2,7 +2,6 @@ open Core
 
 exception Unrecognized_pExpr
 exception InvalidArgumentsForDistributive of string
-exception GcdError
 
 type pExp =
   | Term of int*int
@@ -47,6 +46,7 @@ let rec raw_str_pExpr (_e: pExp): string =
 
 let str_pExpr_Term (a: int) (b: int) : string =
   match a, b with
+  | 0 , 0 -> "0"
   | 0 , _ -> ""
   | _ , 0 -> string_of_int a
   | 1 , 1 -> "x"
@@ -189,6 +189,14 @@ and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
     (equal_pExp hd1 hd2) && (equal_pExp_l tl1 tl2)
   )
   | _ -> false (* takes care of distinct lenghts *)
+
+let rec eval_pExp (e: pExp) ~v:(v: int) : int =
+  match e with
+  | Plus(hd::tl)  -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t + eval_pExp e v) tl
+  | Times(hd::tl) -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t * eval_pExp e v) tl
+  | Fraction(n,d) -> eval_pExp n v / eval_pExp d v (* TODO flawed calc *)
+  | Term(m, n)    -> m * Expr.pow v n
+  | _ -> 0
 
 let rec simplify (e:pExp): pExp =
   print_string ((raw_str_pExpr e) ^ " [before simplify]\n");
