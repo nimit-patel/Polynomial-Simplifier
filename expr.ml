@@ -54,7 +54,7 @@ let rec eval_expr (e: expr) ~v:(v: int) : int =
   | Num(i)      ->  i
   | Var(c)      ->  v
 
-let rec degree_expr (e: expr) : int =
+let rec degree_hibound_expr (e: expr) : int =
   match e with
   | Add(e1, e2) | Sub(e1, e2)     ->  max (degree_expr e1) (degree_expr e2)
   | Mul(e1, e2)     ->  degree_expr e1 + degree_expr e2
