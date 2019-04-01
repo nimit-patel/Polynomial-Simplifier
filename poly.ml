@@ -85,8 +85,8 @@ and str_pExpr_times (acc: string) (e: pExp) : string =
 
 let rec print_pExp (_e: pExp): unit =
   match _e with
-  | Term(0, _)  -> print_string "0\n";
-  | _ ->print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
+  | Term(0, _)  -> print_string "0";
+  | _ -> print_string (strip_root_parenthesis (str_pExpr _e))
 
 let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
