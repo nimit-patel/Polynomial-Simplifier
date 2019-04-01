@@ -173,7 +173,6 @@ and handleFractions (n: pExp) (d: pExp) : pExp =
   | Term(nc, nd), Term(dc, dd) when nc = dc && nd = dd  -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
   | Term(nc, nd), Term(dc, dd) when nd = dd             -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
   | Term(nc, nd), Term(dc, dd) when nd >= dd            -> Times([handleFractions (Term(nc,0)) (Term(dc,0)); Term(1,nd-dd)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
-  (* | Plus(l), denom -> Plus( List.fold ~init:[] ~f:(fun a e -> a@[Fraction(e,denom)]) l ) *)
   | n, d -> Fraction(n, d)
 
 let rec equal_pExp (_e1: pExp) (_e2: pExp) : bool =
