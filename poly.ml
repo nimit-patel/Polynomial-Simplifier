@@ -83,13 +83,15 @@ and str_pExpr_times (acc: string) (e: pExp) : string =
   | _ -> " * " ^ str_pExpr e
 
 let rec print_pExp (_e: pExp): unit =
-  print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
+  match _e with
+  | Term(0, _)  -> print_string "0\n";
+  | _ ->print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
 
 let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
-    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0 -> [Term(m1+m2,n1)]@tl
+    | Term(m1,n1), Term(m2,n2) when ((compare n1 n2 = 0) || (m1 = 0 && m2 = 0)) -> [Term(m1+m2,n1)]@tl
     | _ -> [e]@acc
   )
   | [] -> [e]
@@ -121,7 +123,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.sort l compareDeg                |>
+      List.sort compareDeg l                |>
       List.fold ~init:[] ~f:flatPlus        |>
       List.fold ~init:[] ~f:accumulatePlus  |>
       Plus
@@ -131,7 +133,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.sort l compareDeg                |>
+      List.sort compareDeg l                |>
       List.fold ~init:[] ~f:flatTimes       |>
       List.fold ~init:[] ~f:accumulateTimes |>
       List.fold ~init:[] ~f:distribute      |>
@@ -174,6 +176,7 @@ let rec simplify (e:pExp): pExp =
     if (equal_pExp e rE) then
       e
     else begin
+      print_string (raw_str_pExpr rE);
       print_pExp rE;
       simplify(rE)
     end
