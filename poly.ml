@@ -45,6 +45,11 @@ let rec raw_str_pExpr (_e: pExp): string =
   | Fraction(n, d  )  -> "Fraction(" ^ raw_str_pExpr n ^ ", "  ^ raw_str_pExpr d                                                   ^ ")"
   | _ -> raise Unrecognized_pExpr
 
+let debug_print_raw (exp: pExp): unit = 
+    print_string ("=======================\n");
+    print_string ((raw_str_pExpr exp) ^ "\n");
+    print_string ("=======================\n")
+
 let str_pExpr_Term (a: int) (b: int) : string =
   match a, b with
   | 0 , 0 -> "0"
@@ -171,14 +176,13 @@ and flatTimes (acc: pExp list) (e: pExp) : pExp list =
     | _        -> [simplify1 e]
   )
 
-and handleFractions (n: pExp) (d: pExp) : pExp =
+  and handleFractions (n: pExp) (d: pExp) : pExp =
   match simplify1(n), simplify1(d) with
-  | n           , Term(dc, dd) when dc = 1 && dd = 0    -> n                                                                 (* ax^n / 1                => ax^n           *)
-  | Term(nc, nd), Term(dc, dd) when nc mod dc = 0       -> Fraction(Term(nc/dc, nd), Term(1,dd))    
-  | Term(nc, nd), Term(dc, dd) when nc = dc && nd = dd  -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
-  | Term(nc, nd), Term(dc, dd) when nd = dd             -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
-  | Term(nc, nd), Term(dc, dd) when nd >= dd            -> Times([handleFractions (Term(nc,0)) (Term(dc,0)); Term(1,nd-dd)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
-  (* | Plus(l), denom -> Plus( List.fold ~init:[] ~f:(fun a e -> a@[Fraction(e,denom)]) l ) *)
+  | n           , Term(dc, dd) when dc = 1 && dd = 0            -> n                                                                 (* ax^n / 1                => ax^n           *)
+  | Term(nc, nd), Term(dc, dd) when nc mod dc = 0 && dc <> 1    -> Fraction(Term(nc/dc, nd), Term(1,dd))                             (* ax^n / bx^m where a | b => (a/b)x^n / x^m *)
+  | Term(nc, nd), Term(dc, dd) when nc = dc && nd = dd          -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
+  | Term(nc, nd), Term(dc, dd) when nd = dd                     -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
+  | Term(nc, nd), Term(dc, dd) when nd >= dd                    -> Times([handleFractions (Term(nc,0)) (Term(dc,0)); Term(1,nd-dd)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
   | n, d -> Fraction(n, d)
 
 let rec equal_pExp (_e1: pExp) (_e2: pExp) : bool =
@@ -206,8 +210,10 @@ let rec eval_pExp (e: pExp) ~v:(v: int) : int =
 
 let rec simplify (e:pExp): pExp =
   let rE = simplify1(e) in
-    if (equal_pExp e rE) then
-      e
-    else begin
-      simplify(rE)
-    end
+  debug_print_raw rE;
+  
+  if (equal_pExp e rE) then
+    e
+  else begin
+    simplify(rE)
+  end
