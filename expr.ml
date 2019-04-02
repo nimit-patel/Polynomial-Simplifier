@@ -54,20 +54,15 @@ let rec eval_expr (e: expr) ~v:(v: int) : int =
   | Num(i)      ->  i
   | Var(c)      ->  v
 
-let rec degree_expr (e: expr) : int =
+let rec degree_hibound_expr (e: expr) : int =
   match e with
-  | Add(e1, e2)     ->  max (degree_expr e1) (degree_expr e2)
-  | Mul(e1, e2)     ->  degree_expr e1 + degree_expr e2
-  | Div(e1, e2)     ->  degree_expr e1 - degree_expr e2
-  | Pow(e , i )     ->  degree_expr e * i
-  | Pos(e) | Neg(e) ->  degree_expr e
-  | Num(i)          ->  0
-  | Var(c)          ->  1
-  | Sub(e1, e2)     -> (
-    match degree_expr e1, degree_expr e2 with
-    | d1, d2 when d1 = d2 -> 0 (* if two poly of equal degree are substracted, we have 0 degree *)
-    | d1, d2              -> max d1 d2
-  ) 
+  | Add(e1, e2) | Sub(e1, e2)   ->  max (degree_hibound_expr e1) (degree_hibound_expr e2)
+  | Mul(e1, e2)                 ->  degree_hibound_expr e1 + degree_hibound_expr e2
+  | Div(e1, e2)                 ->  degree_hibound_expr e1 - degree_hibound_expr e2
+  | Pow(e , i )                 ->  degree_hibound_expr e * i
+  | Pos(e)      | Neg(e)        ->  degree_hibound_expr e
+  | Num(i)                      ->  0
+  | Var(c)                      ->  1
 
 let print_expr (e:expr) :expr = 
   print_expr_r e;

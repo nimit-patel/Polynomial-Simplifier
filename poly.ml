@@ -90,15 +90,15 @@ and str_pExpr_times (acc: string) (e: pExp) : string =
   | _ -> " * " ^ str_pExpr e
 
 let rec print_pExp (_e: pExp): unit =
-  print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
+  print_string (strip_root_parenthesis (str_pExpr _e))
 
 let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
+    | Term(m1,n1)   , Term(m2,n2) when compare n1 n2 = 0 -> [Term(m1+m2,n1)                                          ]@tl
     | Fraction(a,b) , Fraction(c,d)                      -> [Fraction(Plus([Times([a;d]);Times([c;b])]),Times([b;d]))]@tl
     | a , Fraction(c,d)             | Fraction(c,d) , a  -> [Fraction(Plus([Times([a;d]);c           ]),           d)]@tl
-    | Term(m1,n1)   , Term(m2,n2) when compare n1 n2 = 0 -> [Term(m1+m2,n1)                                          ]@tl
     | _ -> [e]@acc
   )
   | [] -> [e]
@@ -107,9 +107,9 @@ let accumulateTimes (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
+    | Term(m1,n1), Term(m2,n2)                           -> [Term(m1*m2,n1+n2)                  ]@tl
     | Fraction(a,b) , Fraction(c,d)                      -> [Fraction(Times([a;c]),Times([b;d]))]@tl
     | a , Fraction(c,d)             | Fraction(c,d) , a  -> [Fraction(Times([a;c]),d)           ]@tl
-    | Term(m1,n1), Term(m2,n2)                           -> [Term(m1*m2,n1+n2)                  ]@tl
     | _                                                  -> [e]@acc
   )
   | [] -> [e]
