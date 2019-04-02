@@ -96,10 +96,10 @@ let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
-    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0    -> [Term(m1+m2, n1)]@tl
-    | Term(m1,n1), Term(m2,n2) when m1 = 0 && m2 = 0     -> [Term(0, 0)]@tl
-    | Term(m1,n1), Term(m2,n2) when m1 = 0               -> [Term(m2, n2)]@tl
-    | Term(m1,n1), Term(m2,n2) when m2 = 0               -> [Term(m1, n1)]@tl
+    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0    -> [Term(m1+m2, n1)                                         ]@tl
+    | Term(m1,n1), Term(m2,n2) when m1 = 0 && m2 = 0     -> [Term(0, 0)                                              ]@tl
+    | Term(m1,n1), Term(m2,n2) when m1 = 0               -> [Term(m2, n2)                                            ]@tl
+    | Term(m1,n1), Term(m2,n2) when m2 = 0               -> [Term(m1, n1)                                            ]@tl
     | Fraction(a,b) , Fraction(c,d)                      -> [Fraction(Plus([Times([a;d]);Times([c;b])]),Times([b;d]))]@tl
     | a , Fraction(c,d)             | Fraction(c,d) , a  -> [Fraction(Plus([Times([a;d]);c           ]),           d)]@tl
     | _ -> [e]@acc
