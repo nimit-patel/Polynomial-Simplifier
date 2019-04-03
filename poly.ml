@@ -47,8 +47,7 @@ let rec raw_str_pExpr (_e: pExp): string =
 
 let str_pExpr_Term (a: int) (b: int) : string =
   match a, b with
-  | 0 , 0 -> "0"
-  | 0 , _ -> ""
+  | 0 , _ -> "0"
   | _ , 0 -> string_of_int a
   | 1 , 1 -> "x"
   | -1, 1 -> "-x"
