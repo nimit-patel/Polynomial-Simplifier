@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
+<<<<<<< HEAD
 make clean && make tests
+=======
+make clean --always-make && make tests --always-make
+>>>>>>> nimit
 
 tbold=$(tput bold)
 tnormal=$(tput sgr0)

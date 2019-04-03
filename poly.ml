@@ -29,7 +29,7 @@ let rec from_expr (_e: Expr.expr) : pExp =
 
 let rec degree (_e: pExp): int =
   match _e with
-  | Term  (n,m)    -> m
+  | Term  (n,m)    -> if n = 0 then 0 else m
   | Plus  (l)      -> List.fold ~init:0 ~f:(fun acc e -> max acc (degree e)) l
   | Times (l)      -> List.fold ~init:0 ~f:(fun acc e -> acc + degree e    ) l
   | Fraction (n,d) -> (degree n) - (degree d)

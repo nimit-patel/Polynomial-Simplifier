@@ -6,7 +6,7 @@
         {
             "label": "build-debug",
             "type": "shell",
-            "command": "make clean && make debug"
+            "command": "make clean --always-make && make debug --always-make"
         }
     ]
 }
