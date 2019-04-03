@@ -208,6 +208,7 @@ and handleFractions (n: pExp) (d: pExp) : pExp =
   | n, d -> Fraction(n, d)
 
 let rec simplify (e:pExp): pExp =
+  print_string ((raw_str_pExpr e) ^ "\n");
   let rE = simplify1(e) in
     if (equal_pExp e rE) then
       e
