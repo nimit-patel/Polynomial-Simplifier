@@ -8,6 +8,8 @@ exception Dummy
 exception NotMatchingDegree
 exception NotMatchingPolynomials
 
+let filename = Sys.argv.(1)
+
 let rec _checkPoly (exp: expr) (pexp: pExp) (v: int) : pExp =
   if v = 0 
     then pexp 
