@@ -133,6 +133,30 @@ let distribute (acc: pExp list) (e: pExp) : pExp list =
   | hd::tl -> (_distribute hd e)@tl
   | [] -> [e]
 
+
+let rec equal_pExp (_e1: pExp) (_e2: pExp) : bool =
+  match _e1, _e2 with
+  | Times(l1), Times(l2) | Plus(l1), Plus(l2) -> equal_pExp_l l1 l2
+  | Fraction(d1, n1), Fraction(d2, n2) -> equal_pExp d1 d2 && equal_pExp n1 n2
+  | Term(m1,n1), Term(m2,n2) -> (compare m1 m2) = 0 && (compare n1 n2) = 0
+  | _,_ -> false
+
+and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
+  match _l1, _l2 with
+  | [],[] -> true (* two empty lists are equal *)
+  | hd1::tl1, hd2::tl2 -> (
+    (equal_pExp hd1 hd2) && (equal_pExp_l tl1 tl2)
+  )
+  | _ -> false (* takes care of distinct lenghts *)
+
+let rec eval_pExp (e: pExp) ~v:(v: int) : int =
+  match e with
+  | Plus(hd::tl)  -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t + eval_pExp e v) tl
+  | Times(hd::tl) -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t * eval_pExp e v) tl
+  | Fraction(n,d) -> eval_pExp n v / eval_pExp d v (* TODO flawed calc *)
+  | Term(m, n)    -> m * Expr.pow v n
+  | _ -> 0
+
 let rec simplify1 (e:pExp): pExp =
   match e with
   | Plus(l) -> (
@@ -173,37 +197,15 @@ and flatTimes (acc: pExp list) (e: pExp) : pExp list =
     | _        -> [simplify1 e]
   )
 
-  and handleFractions (n: pExp) (d: pExp) : pExp =
+and handleFractions (n: pExp) (d: pExp) : pExp =
   match simplify1(n), simplify1(d) with
   | n           , Term(dc, dd) when dc = 1 && dd = 0            -> n                                                                 (* ax^n / 1                => ax^n           *)
   | Term(nc, nd), Term(dc, dd) when nc mod dc = 0 && dc <> 1    -> Fraction(Term(nc/dc, nd), Term(1,dd))                             (* ax^n / bx^m where a | b => (a/b)x^n / x^m *)
   | Term(nc, nd), Term(dc, dd) when nc = dc && nd = dd          -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
   | Term(nc, nd), Term(dc, dd) when nd = dd                     -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
   | Term(nc, nd), Term(dc, dd) when nd >= dd                    -> Times([handleFractions (Term(nc,0)) (Term(dc,0)); Term(1,nd-dd)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
+  | n, d                       when equal_pExp n d              -> Term(1,0)
   | n, d -> Fraction(n, d)
-
-let rec equal_pExp (_e1: pExp) (_e2: pExp) : bool =
-  match _e1, _e2 with
-  | Times(l1), Times(l2) | Plus(l1), Plus(l2) -> equal_pExp_l l1 l2
-  | Fraction(d1, n1), Fraction(d2, n2) -> equal_pExp d1 d2 && equal_pExp n1 n2
-  | Term(m1,n1), Term(m2,n2) -> (compare m1 m2) = 0 && (compare n1 n2) = 0
-  | _,_ -> false
-
-and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
-  match _l1, _l2 with
-  | [],[] -> true (* two empty lists are equal *)
-  | hd1::tl1, hd2::tl2 -> (
-    (equal_pExp hd1 hd2) && (equal_pExp_l tl1 tl2)
-  )
-  | _ -> false (* takes care of distinct lenghts *)
-
-let rec eval_pExp (e: pExp) ~v:(v: int) : int =
-  match e with
-  | Plus(hd::tl)  -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t + eval_pExp e v) tl
-  | Times(hd::tl) -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t * eval_pExp e v) tl
-  | Fraction(n,d) -> eval_pExp n v / eval_pExp d v (* TODO flawed calc *)
-  | Term(m, n)    -> m * Expr.pow v n
-  | _ -> 0
 
 let rec simplify (e:pExp): pExp =
   let rE = simplify1(e) in
