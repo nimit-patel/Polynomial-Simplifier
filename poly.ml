@@ -149,13 +149,23 @@ and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
   )
   | _ -> false (* takes care of distinct lenghts *)
 
-let rec eval_pExp (e: pExp) ~v:(v: int) : int =
+let rec _eval_pExp (e: pExp) ~v:(v: int) : int =
   match e with
-  | Plus(hd::tl)  -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t + eval_pExp e v) tl
-  | Times(hd::tl) -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t * eval_pExp e v) tl
-  | Fraction(n,d) -> eval_pExp n v / eval_pExp d v (* TODO flawed calc *)
+  | Plus(hd::tl)  -> List.fold ~init:(_eval_pExp hd v) ~f:(fun t e -> t + _eval_pExp e v) tl
+  | Times(hd::tl) -> List.fold ~init:(_eval_pExp hd v) ~f:(fun t e -> t * _eval_pExp e v) tl
+  | Fraction(n,d) -> _eval_pExp n v / _eval_pExp d v (* TODO flawed calc *)
   | Term(m, n)    -> m * Expr.pow v n
   | _ -> 0
+
+let eval_pExp (e: pExp) ~v:(v: int) : int =
+  begin
+    let s = _eval_pExp e v in
+    print_int v;
+    print_string " pExp out ";
+    print_int s;
+    print_endline ";";
+    s
+  end
 
 let rec simplify1 (e:pExp): pExp =
   match e with
@@ -163,7 +173,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.stable_sort compareDeg l         |>
+      List.stable_sort l compareDeg         |>
       List.fold ~init:[] ~f:flatPlus        |>
       List.fold ~init:[] ~f:accumulatePlus  |>
       Plus
@@ -173,14 +183,14 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.stable_sort compareDeg l         |>
+      List.stable_sort l compareDeg         |>
       List.fold ~init:[] ~f:flatTimes       |>
       List.fold ~init:[] ~f:accumulateTimes |>
       List.fold ~init:[] ~f:distribute      |>
       Times
     )
   )
-  | Fraction(n, d) -> handleFractions n d
+  | Fraction(n, d) -> flatFraction n d
   | _ -> e
 
 and flatPlus (acc: pExp list) (e: pExp) : pExp list =
@@ -197,18 +207,25 @@ and flatTimes (acc: pExp list) (e: pExp) : pExp list =
     | _        -> [simplify1 e]
   )
 
-and handleFractions (n: pExp) (d: pExp) : pExp =
-  match simplify1(n), simplify1(d) with
-  | n           , Term(dc, dd) when dc = 1 && dd = 0            -> n                                                                 (* ax^n / 1                => ax^n           *)
-  | Term(nc, nd), Term(dc, dd) when nc mod dc = 0 && dc <> 1    -> Fraction(Term(nc/dc, nd), Term(1,dd))                             (* ax^n / bx^m where a | b => (a/b)x^n / x^m *)
-  | Term(nc, nd), Term(dc, dd) when nc = dc && nd = dd          -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
-  | Term(nc, nd), Term(dc, dd) when nd = dd                     -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
-  | Term(nc, nd), Term(dc, dd) when nd >= dd                    -> Times([handleFractions (Term(nc,0)) (Term(dc,0)); Term(1,nd-dd)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
-  | n, d                       when equal_pExp n d              -> Term(1,0)
-  | n, d -> Fraction(n, d)
+and flatFraction (n: pExp) (d: pExp) : pExp =
+  match simplify1 n, simplify1 d with
+  | Fraction(a,b), Fraction(c,d) -> simpFraction (Times([a;d])) (Times([b;c])) (* (a/b)/(c/d) = (a*d)/(b*c) *)
+  | Fraction(a,b), c             -> simpFraction a (Times([b;c]))              (* (a/b)/c     = a/(b*c)     *)
+  | c, Fraction(a,b)             -> simpFraction (Times([c;b])) a              (* c/(a/b)     = (c*b)/a     *)
+  | n, d -> simpFraction n d
+
+and simpFraction (n: pExp) (d: pExp) : pExp =
+  match simplify1 n, simplify1 d with
+  | Term(0,_), _                               -> Term(0,0) (* 0/x = 0 *)
+  | n, d                 when equal_pExp n d   -> Term(1,0) (* p(x)/q(x)=1 when p(x) = q(x) *)
+  | n, Term(1, 0)                              -> n
+  | Term(a,n), Term(b,m) when n >= m && m <> 0 -> Times([Fraction(Term(a,0),Term(b,0)); Term(1, n-m)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
+  | Term(a,n), Term(b,m) when a mod b = 0      -> Fraction(Term(a/b, n), Term(1, m)) (* ax^n / bx^m where a | b => (a/b)x^n / x^m *)
+  | n, d                                       -> Fraction(n, d)
 
 let rec simplify (e:pExp): pExp =
-  print_string ((raw_str_pExpr e) ^ "\n");
+  (*print_string ((raw_str_pExpr e) ^ "\n");
+  print_pExp e; print_string "\n";*)
   let rE = simplify1(e) in
     if (equal_pExp e rE) then
       e

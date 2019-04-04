@@ -42,17 +42,28 @@ let rec pow (b: int) (e: int) : int =
   | 0 -> 1
   | _ -> (pow b (e - 1)) * b
 
-let rec eval_expr (e: expr) ~v:(v: int) : int =
+let rec _eval_expr (e: expr) ~v:(v: int) : int =
   match e with
-  | Add(e1, e2) ->  eval_expr e1 v + eval_expr e2 v
-  | Sub(e1, e2) ->  eval_expr e1 v - eval_expr e2 v
-  | Mul(e1, e2) ->  eval_expr e1 v * eval_expr e2 v
-  | Div(e1,e2 ) ->  eval_expr e1 v / eval_expr e2 v (* TODO: flawed check *)
-  | Pow(e , i ) ->  pow (eval_expr e v) i
-  | Pos(e)      ->  eval_expr e v
-  | Neg(e)      -> -eval_expr e v
+  | Add(e1, e2) ->  _eval_expr e1 v + _eval_expr e2 v
+  | Sub(e1, e2) ->  _eval_expr e1 v - _eval_expr e2 v
+  | Mul(e1, e2) ->  _eval_expr e1 v * _eval_expr e2 v
+  | Div(e1, e2) ->  _eval_expr e1 v / _eval_expr e2 v (* TODO: flawed check *)
+  | Pow(e , i ) ->  pow (_eval_expr e v) i
+  | Pos(e)      ->  _eval_expr e v
+  | Neg(e)      -> -_eval_expr e v
   | Num(i)      ->  i
   | Var(c)      ->  v
+
+
+let eval_expr (e: expr) ~v:(v: int) : int =
+  begin
+    let s = _eval_expr e v in
+    print_int v;
+    print_string " exp out ";
+    print_int s;
+    print_endline ";";
+    s
+  end
 
 let rec degree_hibound_expr (e: expr) : int =
   match e with

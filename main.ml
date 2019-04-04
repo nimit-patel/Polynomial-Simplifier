@@ -14,6 +14,7 @@ let rec _checkPoly (exp: expr) (pexp: pExp) (v: int) : pExp =
   if v = 0 
     then pexp 
   else 
+    let v = abs v in
     try if (eval_expr exp v) = (eval_pExp pexp v)
           then _checkPoly exp pexp (v-1)
         else
@@ -21,8 +22,8 @@ let rec _checkPoly (exp: expr) (pexp: pExp) (v: int) : pExp =
     with Division_by_zero -> _checkRand exp pexp v
     
 and _checkRand (exp: expr) (pexp: pExp) (resume: int) : pExp =
-  let d = degree_hibound_expr exp in 
-  let r = (Random.int d) + (d) + 1 in
+  let d = abs (degree_hibound_expr exp) in 
+  let r = (Random.int d+1) + (d) + 5 in
   try if (eval_expr exp r) = (eval_pExp pexp r)
           then _checkPoly exp pexp (resume - 1)
       else
@@ -42,5 +43,5 @@ let () =
   let exp = Parser.main Lexer.token t in
   let pexp = from_expr exp in 
   let pexp = simplify pexp in
-  checkPoly exp pexp |>
-  print_pExp; 
+  (*checkPoly exp pexp |>*)
+  print_pExp pexp; 
