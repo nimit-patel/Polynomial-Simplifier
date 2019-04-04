@@ -4,7 +4,7 @@
 
 Given a non-rational polynomial in multiple variables, the output is a fully expanded and simplified polynomial in the following form:
 
-p(a,b,...) = lamba_na^n + ... + lamba_2a^2 + lamba_1a + lamba_0 + beta_mb^m + ... + beta_2b^2 + beta_1a + a_0 + ... 
+p(a,b,...) = lamba_na^n + ... + lamba_2a^2 + lamba_1a + lamba_0 + beta_mb^m + ... + beta_2b^2 + beta_1b + beta_0 + ... 
 
 ## Testing
 
