@@ -4,7 +4,7 @@
 
 Given a rational polynomial in multiple variables, the output is a fully expanded and simplified polynomial in the following form:
 
-p(x)/q(x) = (a_nx^n + ... + a_2x^2 + a_1x + a_0)/(a_mx^m + ... + a_2x^2 + a_1x + a_0)
+p(a,b,...)/q(a,b,...) = lamba_na^n + ... + lamba_2a^2 + lamba_1a + lamba_0 + beta_mb^m + ... + beta_2b^2 + beta_1b + beta_0 + ... / lamba_pa^p + ... + lamba_2^2 + lamba_1a + lamba_0 + beta_qb^q + ... + beta_2b^2 + beta_1b + beta_0 + ... 
 
 ## Testing
 
