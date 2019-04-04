@@ -1,4 +1,4 @@
-# Polynomial Simplifier
+# Polynomial Simplifier (Bonus 2)
 
 ## Description
 
