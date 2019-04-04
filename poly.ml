@@ -1,4 +1,5 @@
 open Core
+open Expr
 
 exception Unrecognized_pExpr
 exception InvalidArgumentsForDistributive of string
@@ -26,7 +27,7 @@ let rec from_expr (_e: Expr.expr) : pExp =
 
 let rec degree (_e: pExp): int =
   match _e with
-  | Term  (n,m) -> m
+  | Term  (n,m) -> if n = 0 then 0 else m
   | Plus  (l)   -> List.fold ~init:0 ~f:(fun acc e -> max acc (degree e)) l
   | Times (l)   -> List.fold ~init:0 ~f:(fun acc e -> acc + degree e    ) l
 
@@ -42,6 +43,7 @@ let rec raw_str_pExpr (_e: pExp): string =
 
 let str_pExpr_Term (a: int) (b: int) : string =
   match a, b with
+  | 0 , 0 -> "0"
   | 0 , _ -> ""
   | _ , 0 -> string_of_int a
   | 1 , 1 -> "x"
@@ -83,14 +85,19 @@ and str_pExpr_times (acc: string) (e: pExp) : string =
   | _ -> " * " ^ str_pExpr e
 
 let rec print_pExp (_e: pExp): unit =
-  print_string (strip_root_parenthesis (str_pExpr _e) ^ "\n")
+  match _e with
+  | Term(0, _)  -> print_string "0";
+  | _ -> print_string (strip_root_parenthesis (str_pExpr _e))
 
 let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
-    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0 -> [Term(m1+m2,n1)]@tl
-    | _ -> [e]@acc
+    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0  -> [Term(m1+m2, n1)]@tl
+    | Term(m1,n1), Term(m2,n2) when m1 = 0 && m2 = 0   -> [Term(0, 0)]@tl
+    | Term(m1,n1), Term(m2,n2) when m1 = 0             -> [Term(m2, n2)]@tl
+    | Term(m1,n1), Term(m2,n2) when m2 = 0             -> [Term(m1, n1)]@tl
+    | _ -> [e]@acc 
   )
   | [] -> [e]
 
@@ -121,7 +128,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.stable_sort l compareDeg         |>
+      List.stable_sort compareDeg l         |>
       List.fold ~init:[] ~f:flatPlus        |>
       List.fold ~init:[] ~f:accumulatePlus  |>
       Plus
@@ -131,7 +138,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.stable_sort l compareDeg         |>
+      List.stable_sort compareDeg l         |>
       List.fold ~init:[] ~f:flatTimes       |>
       List.fold ~init:[] ~f:accumulateTimes |>
       List.fold ~init:[] ~f:distribute      |>
@@ -168,12 +175,17 @@ and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
   )
   | _ -> false (* takes care of distinct lenghts *)
 
+let rec eval_pExp (e: pExp) ~v:(v: int) : int =
+  match e with
+  | Plus(hd::tl)  -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t + eval_pExp e v) tl
+  | Times(hd::tl) -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t * eval_pExp e v) tl
+  | Term(m, n)    -> m * Expr.pow v n
+  | _ -> 0
+
 let rec simplify (e:pExp): pExp =
-  (*print_string ((raw_str_pExpr e) ^ "\n");*)
   let rE = simplify1(e) in
     if (equal_pExp e rE) then
       e
     else begin
-      print_pExp rE;
       simplify(rE)
     end

@@ -35,9 +35,31 @@ and
       | Pos(e) -> print_op1 "+" e
       | Neg(e) -> print_op1 "-" e
 
-(*
-  Print expression and pass it through
-*)
+let rec pow (b: int) (e: int) : int =
+  match e with
+  | 0 -> 1
+  | _ -> (pow b (e - 1)) * b
+
+let rec eval_expr (e: expr) ~v:(v: int) : int =
+  match e with
+  | Add(e1, e2) ->  eval_expr e1 v + eval_expr e2 v
+  | Sub(e1, e2) ->  eval_expr e1 v - eval_expr e2 v
+  | Mul(e1, e2) ->  eval_expr e1 v * eval_expr e2 v
+  | Pow(e , i ) ->  pow (eval_expr e v) i
+  | Pos(e)      ->  eval_expr e v
+  | Neg(e)      -> -eval_expr e v
+  | Num(i)      ->  i
+  | Var(c)      ->  v
+
+let rec degree_hibound_expr (e: expr) : int =
+  match e with
+  | Add(e1, e2) | Sub(e1, e2)   ->  max (degree_hibound_expr e1) (degree_hibound_expr e2)
+  | Mul(e1, e2)                 ->  degree_hibound_expr e1 + degree_hibound_expr e2
+  | Pow(e , i )                 ->  degree_hibound_expr e * i
+  | Pos(e)      | Neg(e)        ->  degree_hibound_expr e
+  | Num(i)                      ->  0
+  | Var(c)                      ->  1
+  
 let print_expr (e:expr) :expr = 
   print_expr_r e;
   print_newline ();
