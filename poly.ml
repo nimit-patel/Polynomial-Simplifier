@@ -173,7 +173,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.stable_sort l compareDeg         |>
+      List.stable_sort compareDeg l         |>
       List.fold ~init:[] ~f:flatPlus        |>
       List.fold ~init:[] ~f:accumulatePlus  |>
       Plus
@@ -183,7 +183,7 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      List.stable_sort l compareDeg         |>
+      List.stable_sort compareDeg l         |>
       List.fold ~init:[] ~f:flatTimes       |>
       List.fold ~init:[] ~f:accumulateTimes |>
       List.fold ~init:[] ~f:distribute      |>
@@ -231,3 +231,4 @@ let rec simplify (e:pExp): pExp =
       e
     else
       simplify(rE)
+  
