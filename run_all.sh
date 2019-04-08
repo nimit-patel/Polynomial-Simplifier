@@ -18,6 +18,7 @@ for f in tests/*.out; do
         passed=$((passed + 1))
     else    
         echo "${tbold}${tred}[FAILED]${tnormal}";
+        echo "With input poly: $(cat ${testcase}.in)" 
         git diff --no-index ${f} ${expect}
         failed=$((failed + 1))
     fi

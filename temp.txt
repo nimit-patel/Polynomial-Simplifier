@@ -1,0 +1,18 @@
+Times(Fraction(Times(Term(27, 0), Term(1, 1)), Times(Plus(Term(1, 1), Times(Term(-1, 0), Term(2, 0))), Plus(Term(1, 1), Times(Term(-1, 0), Term(2, 0))))), Times(Plus(Term(1, 1), Term(1, 0)), Plus(Term(1, 1), Term(1, 0))))
+((27 * x)/((x + (-1 * 2)) * (x + (-1 * 2)))) * ((x + 1) * (x + 1))
+Times(Fraction(Times(Plus(Term(1, 1), Term(1, 0)), Times(Plus(Term(1, 1), Term(1, 0)), Times(Term(27, 1)))), Times(Plus(Times(Times(Term(-2, 0)), Plus(Term(1, 1), Times(Term(-2, 0)))), Times(Plus(Times(Term(1, 1), Times(Term(-2, 0))), Times(Term(1, 1), Term(1, 1))))))))
+(((x + 1) * ((x + 1) * (27x)))/((((-2) * (x + (-2))) + (((x * (-2)) + (x * x))))))
+Fraction(Times(Plus(Term(1, 1), Term(1, 0)), Times(Plus(Term(1, 1), Term(1, 0)), Times(Term(27, 1)))), Times(Plus(Times(Times(Term(-2, 0)), Plus(Term(1, 1), Times(Term(-2, 0)))), Times(Plus(Times(Term(1, 1), Times(Term(-2, 0))), Times(Term(1, 1), Term(1, 1)))))))
+((x + 1) * ((x + 1) * (27x)))/((((-2) * (x + (-2))) + (((x * (-2)) + (x * x)))))
+Fraction(Times(Plus(Times(Plus(Times(Term(1, 0), Times(Term(27, 1), Term(1, 1))), Times(Term(1, 0), Times(Term(27, 1), Term(1, 0))))), Times(Plus(Times(Term(1, 1), Times(Term(27, 1), Term(1, 1))), Times(Term(1, 1), Times(Term(27, 1), Term(1, 0))))))), Plus(Times(Times(Term(-2, 0)), Plus(Term(1, 1), Times(Term(-2, 0)))), Times(Plus(Times(Term(1, 1), Times(Term(-2, 0))), Times(Term(1, 1), Term(1, 1))))))
+(((((1 * (27x * x)) + (1 * (27x * 1)))) + (((x * (27x * x)) + (x * (27x * 1))))))/(((-2) * (x + (-2))) + (((x * (-2)) + (x * x))))
+Fraction(Plus(Times(Plus(Times(Term(1, 0), Times(Term(27, 1), Term(1, 1))), Times(Term(1, 0), Times(Term(27, 1), Term(1, 0))))), Times(Plus(Times(Term(1, 1), Times(Term(27, 1), Term(1, 1))), Times(Term(1, 1), Times(Term(27, 1), Term(1, 0)))))), Plus(Plus(Times(Term(1, 1), Times(Term(-2, 0))), Times(Term(1, 1), Term(1, 1))), Times(Plus(Times(Term(-2, 0), Term(-2, 0)), Times(Term(-2, 0), Term(1, 1))))))
+((((1 * (27x * x)) + (1 * (27x * 1)))) + (((x * (27x * x)) + (x * (27x * 1)))))/(((x * (-2)) + (x * x)) + (((-2(-2)) + (-2 * x))))
+Fraction(Plus(Plus(Times(Term(1, 1), Times(Term(27, 1), Term(1, 1))), Times(Term(1, 1), Times(Term(27, 1), Term(1, 0)))), Plus(Times(Term(1, 0), Times(Term(27, 1), Term(1, 1))), Times(Term(1, 0), Times(Term(27, 1), Term(1, 0))))), Plus(Times(Term(1, 2)), Times(Term(-2, 1)), Plus(Times(Term(-2, 0), Term(-2, 0)), Times(Term(-2, 0), Term(1, 1)))))
+(((x * (27x * x)) + (x * (27x * 1))) + ((1 * (27x * x)) + (1 * (27x * 1))))/((x^2) + (-2x) + ((-2(-2)) + (-2 * x)))
+Fraction(Plus(Times(Term(27, 2)), Times(Term(27, 3)), Times(Term(27, 1)), Times(Term(27, 2))), Plus(Term(1, 2), Times(Term(-2, 1)), Times(Term(4, 0)), Term(-2, 1)))
+((27x^2) + (27x^3) + (27x) + (27x^2))/(x^2 + (-2x) + (4) - 2x)
+Fraction(Plus(Term(27, 3), Term(54, 2), Term(27, 1)), Plus(Term(1, 2), Term(-4, 1), Term(4, 0)))
+(27x^3 + 54x^2 + 27x)/(x^2 - 4x + 4)
+7 pExp out 483;
+7 exp out 448;

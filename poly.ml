@@ -47,13 +47,12 @@ let rec raw_str_pExpr (_e: pExp): string =
 
 let debug_print_raw (exp: pExp): unit = 
     print_string ("=======================\n");
-    print_string ((raw_str_pExpr exp) ^ "\n");
+    print_string ((raw_str_pExpr exp) ^  "\n");
     print_string ("=======================\n")
 
 let str_pExpr_Term (a: int) (b: int) : string =
   match a, b with
-  | 0 , 0 -> "0"
-  | 0 , _ -> ""
+  | 0 , _ -> "0"
   | _ , 0 -> string_of_int a
   | 1 , 1 -> "x"
   | -1, 1 -> "-x"
@@ -95,21 +94,19 @@ and str_pExpr_times (acc: string) (e: pExp) : string =
   | _ -> " * " ^ str_pExpr e
 
 let rec print_pExp (_e: pExp): unit =
-  match _e with
-  | Term(0, _)  -> print_string "0";
-  | _ -> print_string (strip_root_parenthesis (str_pExpr _e))
+  print_string (strip_root_parenthesis (str_pExpr _e))
 
 let accumulatePlus (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
-    | Fraction(a,b) , Fraction(c,d)                      -> [Fraction(Plus([Times([a;d]);Times([c;b])]),Times([b;d]))]@tl 
-    | a , Fraction(c,d)             | Fraction(c,d) , a  -> [Fraction(Plus([Times([a;d]);c           ]),           d)]@tl    
-    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0  -> [Term(m1+m2, n1)]@tl
-    | Term(m1,n1), Term(m2,n2) when m1 = 0 && m2 = 0   -> [Term(0, 0)]@tl
-    | Term(m1,n1), Term(m2,n2) when m1 = 0             -> [Term(m2, n2)]@tl
-    | Term(m1,n1), Term(m2,n2) when m2 = 0             -> [Term(m1, n1)]@tl
-    | _ -> [e]@acc 
+    | Term(m1,n1), Term(m2,n2) when compare n1 n2 = 0    -> [Term(m1+m2, n1)                                         ]@tl
+    | Term(m1,n1), Term(m2,n2) when m1 = 0 && m2 = 0     -> [Term(0, 0)                                              ]@tl
+    | Term(m1,n1), Term(m2,n2) when m1 = 0               -> [Term(m2, n2)                                            ]@tl
+    | Term(m1,n1), Term(m2,n2) when m2 = 0               -> [Term(m1, n1)                                            ]@tl
+    | Fraction(a,b) , Fraction(c,d)                      -> [Fraction(Plus([Times([a;d]);Times([c;b])]),Times([b;d]))]@tl
+    | a , Fraction(c,d)             | Fraction(c,d) , a  -> [Fraction(Plus([Times([a;d]);c           ]),           d)]@tl
+    | _ -> [e]@acc
   )
   | [] -> [e]
 
@@ -117,9 +114,9 @@ let accumulateTimes (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (
     match hd, e with
+    | Term(m1,n1), Term(m2,n2)                           -> [Term(m1*m2,n1+n2)                  ]@tl
     | Fraction(a,b) , Fraction(c,d)                      -> [Fraction(Times([a;c]),Times([b;d]))]@tl
     | a , Fraction(c,d)             | Fraction(c,d) , a  -> [Fraction(Times([a;c]),d)           ]@tl
-    | Term(m1,n1), Term(m2,n2)                           -> [Term(m1*m2,n1+n2)                  ]@tl
     | _                                                  -> [e]@acc
   )
   | [] -> [e]
@@ -135,6 +132,40 @@ let distribute (acc: pExp list) (e: pExp) : pExp list =
   match acc with
   | hd::tl -> (_distribute hd e)@tl
   | [] -> [e]
+
+
+let rec equal_pExp (_e1: pExp) (_e2: pExp) : bool =
+  match _e1, _e2 with
+  | Times(l1), Times(l2) | Plus(l1), Plus(l2) -> equal_pExp_l l1 l2
+  | Fraction(d1, n1), Fraction(d2, n2) -> equal_pExp d1 d2 && equal_pExp n1 n2
+  | Term(m1,n1), Term(m2,n2) -> (compare m1 m2) = 0 && (compare n1 n2) = 0
+  | _,_ -> false
+
+and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
+  match _l1, _l2 with
+  | [],[] -> true (* two empty lists are equal *)
+  | hd1::tl1, hd2::tl2 -> (
+    (equal_pExp hd1 hd2) && (equal_pExp_l tl1 tl2)
+  )
+  | _ -> false (* takes care of distinct lenghts *)
+
+let rec _eval_pExp (e: pExp) ~v:(v: int) : int =
+  match e with
+  | Plus(hd::tl)  -> List.fold ~init:(_eval_pExp hd v) ~f:(fun t e -> t + _eval_pExp e v) tl
+  | Times(hd::tl) -> List.fold ~init:(_eval_pExp hd v) ~f:(fun t e -> t * _eval_pExp e v) tl
+  | Fraction(n,d) -> _eval_pExp n v / _eval_pExp d v (* TODO flawed calc *)
+  | Term(m, n)    -> m * Expr.pow v n
+  | _ -> 0
+
+let eval_pExp (e: pExp) ~v:(v: int) : int =
+  begin
+    let s = _eval_pExp e v in
+    print_int v;
+    print_string " pExp out ";
+    print_int s;
+    print_endline ";";
+    s
+  end
 
 let rec simplify1 (e:pExp): pExp =
   match e with
@@ -159,7 +190,7 @@ let rec simplify1 (e:pExp): pExp =
       Times
     )
   )
-  | Fraction(n, d) -> handleFractions n d
+  | Fraction(n, d) -> flatFraction n d
   | _ -> e
 
 and flatPlus (acc: pExp list) (e: pExp) : pExp list =
@@ -176,44 +207,28 @@ and flatTimes (acc: pExp list) (e: pExp) : pExp list =
     | _        -> [simplify1 e]
   )
 
-  and handleFractions (n: pExp) (d: pExp) : pExp =
-  match simplify1(n), simplify1(d) with
-  | n           , Term(dc, dd) when dc = 1 && dd = 0            -> n                                                                 (* ax^n / 1                => ax^n           *)
-  | Term(nc, nd), Term(dc, dd) when nc mod dc = 0 && dc <> 1    -> Fraction(Term(nc/dc, nd), Term(1,dd))                             (* ax^n / bx^m where a | b => (a/b)x^n / x^m *)
-  | Term(nc, nd), Term(dc, dd) when nc = dc && nd = dd          -> Term(1,0)                                                         (* ax^n / ax^n = 1 *)
-  | Term(nc, nd), Term(dc, dd) when nd = dd                     -> Fraction(Term(nc,0), Term(dc,0))                                  (* ax^n / bx^n = a/b *)
-  | Term(nc, nd), Term(dc, dd) when nd >= dd                    -> Times([handleFractions (Term(nc,0)) (Term(dc,0)); Term(1,nd-dd)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
-  | n, d -> Fraction(n, d)
+and flatFraction (n: pExp) (d: pExp) : pExp =
+  match simplify1 n, simplify1 d with
+  | Fraction(a,b), Fraction(c,d) -> simpFraction (Times([a;d])) (Times([b;c])) (* (a/b)/(c/d) = (a*d)/(b*c) *)
+  | Fraction(a,b), c             -> simpFraction a (Times([b;c]))              (* (a/b)/c     = a/(b*c)     *)
+  | c, Fraction(a,b)             -> simpFraction (Times([c;b])) a              (* c/(a/b)     = (c*b)/a     *)
+  | n, d -> simpFraction n d
 
-let rec equal_pExp (_e1: pExp) (_e2: pExp) : bool =
-  match _e1, _e2 with
-  | Times(l1), Times(l2) | Plus(l1), Plus(l2) -> equal_pExp_l l1 l2
-  | Fraction(d1, n1), Fraction(d2, n2) -> equal_pExp d1 d2 && equal_pExp n1 n2
-  | Term(m1,n1), Term(m2,n2) -> (compare m1 m2) = 0 && (compare n1 n2) = 0
-  | _,_ -> false
-
-and equal_pExp_l (_l1: pExp list) (_l2: pExp list) : bool =
-  match _l1, _l2 with
-  | [],[] -> true (* two empty lists are equal *)
-  | hd1::tl1, hd2::tl2 -> (
-    (equal_pExp hd1 hd2) && (equal_pExp_l tl1 tl2)
-  )
-  | _ -> false (* takes care of distinct lenghts *)
-
-let rec eval_pExp (e: pExp) ~v:(v: int) : int =
-  match e with
-  | Plus(hd::tl)  -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t + eval_pExp e v) tl
-  | Times(hd::tl) -> List.fold ~init:(eval_pExp hd v) ~f:(fun t e -> t * eval_pExp e v) tl
-  | Fraction(n,d) -> eval_pExp n v / eval_pExp d v (* TODO flawed calc *)
-  | Term(m, n)    -> m * Expr.pow v n
-  | _ -> 0
+and simpFraction (n: pExp) (d: pExp) : pExp =
+  match simplify1 n, simplify1 d with
+  | Term(0,_), _                               -> Term(0,0) (* 0/x = 0 *)
+  | n, d                 when equal_pExp n d   -> Term(1,0) (* p(x)/q(x)=1 when p(x) = q(x) *)
+  | n, Term(1, 0)                              -> n
+  | Term(a,n), Term(b,m) when n >= m && m <> 0 -> Times([Fraction(Term(a,0),Term(b,0)); Term(1, n-m)]) (* ax^n / bx^m = (a/b)x^(n-m) *)
+  | Term(a,n), Term(b,m) when a mod b = 0      -> Fraction(Term(a/b, n), Term(1, m)) (* ax^n / bx^m where a | b => (a/b)x^n / x^m *)
+  | n, d                                       -> Fraction(n, d)
 
 let rec simplify (e:pExp): pExp =
+  (*print_string ((raw_str_pExpr e) ^ "\n");
+  print_pExp e; print_string "\n";*)
   let rE = simplify1(e) in
-  debug_print_raw rE;
+    if (equal_pExp e rE) then
+      e
+    else
+      simplify(rE)
   
-  if (equal_pExp e rE) then
-    e
-  else begin
-    simplify(rE)
-  end
