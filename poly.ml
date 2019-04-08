@@ -77,7 +77,7 @@ let rec compareTimesList (l1 : pExp list) (l2: pExp list): int =
                         | Term(m1, 0, '#'), Term(m2, n2, c2) when n2 <> 0      -> compareTimesList tl1 l2
                         | Term(m1, n1, c1), Term(m2, 0, '#') when n1 <> 0      -> compareTimesList l1 tl2
                         | Term(m1, n1, c1), Term(m2, n2, c2) when c1 <> c2     -> Char.compare c1 c2
-                        | Term(m1, n1, c1), Term(m2, n2, c2) when n1 <> n2     -> n1 - n2
+                        | Term(m1, n1, c1), Term(m2, n2, c2) when n1 <> n2     -> n2 - n1
                         | Term(m1, n1, c1), Term(m2, n2, c2)                   -> compareTimesList tl1 tl2
                         | Plus(_), Term(m2, n2, c2)                            -> 1
                         | Term(m1, n1, c1), Plus(_)                            -> -1
@@ -152,7 +152,7 @@ let rec str_pExpr (_e: pExp): string =
   match _e with
   | Term(a,b,c)   -> str_pExpr_Term a b c
   | Plus (_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_plus  _l ^ ")"
-  | Times(_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_times _l ^ ")"
+  | Times(_h::_l) -> List.fold ~init:(str_pExpr _h) ~f:str_pExpr_times _l 
   | _ -> raise Unrecognized_pExpr
 
 and str_pExpr_plus (acc: string) (e: pExp) : string =
@@ -259,8 +259,8 @@ let rec eval_pExp (e: pExp) ~v:(v: int) : int =
   | _ -> 0
 
 let rec simplify (e:pExp): pExp =
-  (*
-  print_string ("Before simplify--------\n");
+  
+  (*print_string ("Before simplify--------\n");
   print_string ((raw_str_pExpr e) ^ "\n");
   print_pExp e; print_string "\n";*)
   let rE = simplify1(e) in
