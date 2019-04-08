@@ -2,9 +2,9 @@
 
 ## Description
 
-Given a rational polynomial in one variable the output is a fully expanded and simplified polynomial in the following form:
+Given a non-rational polynomial in one variable the output is a fully expanded and simplified polynomial in the following form:
 
-p(x)/q(x) = (a_nx^n + ... + a_2x^2 + a_1x + a_0)/(a_mx^m + ... + a_2x^2 + a_1x + a_0)
+p(x) = a_nx^n + ... + a_2x^2 + a_1x + a_0
 
 ## Testing
 
