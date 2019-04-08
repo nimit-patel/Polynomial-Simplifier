@@ -88,7 +88,7 @@ let rec str_pExpr (_e: pExp): string =
   match _e with
   | Term(a,b,c)      -> str_pExpr_Term a b c
   | Plus    (_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_plus  _l ^ ")"
-  | Times   (_h::_l) -> "(" ^ List.fold ~init:(str_pExpr _h) ~f:str_pExpr_times _l ^ ")"
+  | Times   (_h::_l) ->  List.fold ~init:(str_pExpr _h) ~f:str_pExpr_times _l
   | Fraction(n, d  ) -> "(" ^ str_pExpr n ^ "/" ^ str_pExpr d ^ ")"
   | _ -> raise Unrecognized_pExpr
 
@@ -186,8 +186,8 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      let l = List.stable_sort l compareDeg in
-      List.stable_sort l compareVarNamePlus |>
+      let l = List.stable_sort compareDeg l in
+      List.stable_sort compareVarNamePlus l |>
       List.fold ~init:[] ~f:flatPlus        |>
       List.fold ~init:[] ~f:accumulatePlus  |>
       Plus
@@ -197,8 +197,8 @@ let rec simplify1 (e:pExp): pExp =
     match l with 
     | l::[] -> l
     | _ -> (
-      let l = List.stable_sort l compareDeg in
-      List.stable_sort l compareVarNameTimes |>
+      let l = List.stable_sort compareDeg l in
+      List.stable_sort compareVarNameTimes l |>
       List.fold ~init:[] ~f:flatTimes        |>
       List.fold ~init:[] ~f:accumulateTimes  |>
       List.fold ~init:[] ~f:distribute       |>
