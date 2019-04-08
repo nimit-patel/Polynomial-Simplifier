@@ -28,5 +28,4 @@ let () =
     let exp = Parser.main Lexer.token t in
     let pexp = from_expr exp in 
     let pexp = simplify pexp in
-    (*checkPoly exp pexp |>*)
     print_pExp pexp;
